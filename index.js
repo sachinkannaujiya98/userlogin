@@ -1,12 +1,15 @@
 const express = require("express");
 const app = express();
-const port = 5000;
+
 require("./db/conn.js");
 const User = require("./models/user.js");
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
-
+require("dotenv").config();
 app.use(bodyParser.urlencoded({ extended: false }));
+
+const port = process.env.PORT || 4000;
+
 app.use(bodyParser.json());
 app.use(express.json());
 
