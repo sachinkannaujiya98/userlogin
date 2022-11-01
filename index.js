@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const app = express();
 
 require("./db/conn.js");
@@ -6,13 +7,14 @@ const User = require("./models/user.js");
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
 require("dotenv").config();
+
 app.use(bodyParser.urlencoded({ extended: false }));
 
 const port = process.env.PORT || 4000;
 
 app.use(bodyParser.json());
 app.use(express.json());
-
+app.use(cors());
 // login user
 let existingUser;
 app.post("./login", async (req, res, next) => {
