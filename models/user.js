@@ -1,4 +1,4 @@
-// import mongoose from 'mongoose';
+// const validator = require("validator");
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 const userSchema = new Schema({
@@ -15,6 +15,11 @@ const userSchema = new Schema({
     type: String,
     required: true,
     index: { unique: true },
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
   },
 });
 const User = mongoose.model("User", userSchema);
