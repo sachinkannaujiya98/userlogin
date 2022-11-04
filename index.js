@@ -19,15 +19,15 @@ app.use(cors());
 // login user
 let existingUser;
 app.post("/login", async (req, res, next) => {
-  // try {
-  existingUser = await User.findOne({
-    username: req.body.username,
-    password: req.body.password,
-  });
-  // } catch {
-  //   const error = new Error("Error! Something went wrong.");
-  //   return next(error);
-  // }
+  try {
+    existingUser = await User.findOne({
+      username: req.body.username,
+      password: req.body.password,
+    });
+  } catch {
+    const error = new Error("Error! Something went wrong.");
+    return next(error);
+  }
   if (!existingUser) {
     const error = Error("Username or Password is not correct !");
     return next(error);
@@ -79,13 +79,13 @@ app.post("/send-otp", async (req, res, next) => {
       "</h1>",
   };
   let transporter = nodemailer.createTransport({
-    host: "192.168.29.194",
-    port: 10251,
+    host: "smtp.mailtrap.io",
+    port: 25,
     secure: false, // upgrade later with STARTTLS
-    // auth: {
-    //   user: "username",
-    //   pass: "password",
-    // },
+    auth: {
+      user: "0ecd5cceed5797",
+      pass: "7b7c17995dd596",
+    },
   });
   transporter.sendMail(message, (err) => {
     if (err) {
@@ -104,7 +104,6 @@ app.post("/send-otp", async (req, res, next) => {
   await userOtp.save();
 });
 
-app.post("/sign-up", async (req, res) => {});
 
 // verify otp
 
@@ -112,39 +111,24 @@ app.post("/verify-otp", async (req, res) => {
   existingMail = await Verify.findOne({
     email: req.body.email,
   });
-  // console.log(existingMail.otp);
-  // res.status(200).json({
-  //   success: true,
-  // });
-
-  if (existingMail.otp === req.body.otp) {
-    const signup = new User({
-      username: req.body.username,
-      name: req.body.name,
-      password: req.body.password,
-      otp: existingMail.otp,
-    });
-    try {
-      await signup.save();
-    } catch {
-      const error = new Error("Error! Something went wrong.");
-      return next(error);
-    }
-    res.status(201).json({
-      success: "User Registered successfully",
-      data: {
-        userId: signup._id,
-        name: signup.name,
-        username: signup.username,
-        password: signup.password,
-        email: signup.email,
-      },
-    });
-  } else {
-    res.json({
-      success: false,
-    });
+  if (existingMail.otp !== req.body.otp) {
+    res.status(401).json({
+      message: "Invalid OTP"
+    })
   }
+  const user = await User.create({
+    username: req.body.username,
+    name: req.body.name,
+    email: req.body.email,
+    password: req.body.password,
+    otp: existingMail.otp,
+  })
+  res.status(201).json({
+    success: "User Registered successfully",
+    data: {
+      user
+    },
+  });
 });
 app.get("/accessRoute", (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
@@ -164,8 +148,6 @@ app.get("/accessRoute", (req, res) => {
     },
   });
 });
-// });
-
 app.listen(port, () => {
   console.log(`server is running on port ${port}`);
 });
