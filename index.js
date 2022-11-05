@@ -4,7 +4,7 @@ const cors = require("cors");
 const app = express();
 require("./db/conn.js");
 const User = require("./models/user.js");
-const Verify = require("./models/verify.js");
+const Otp = require("./models/verify.js");
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
 require("dotenv").config();
@@ -42,8 +42,8 @@ app.post("/login", async (req, res, next) => {
         username: existingUser.username,
         password: existingUser.password,
       },
-      "secretkeyappearshere",
-      { expiresIn: "1h" }
+      "secretkeyappearshere"
+      // { expiresIn: "1h" }
     );
   } catch (err) {
     console.log(err);
@@ -80,11 +80,11 @@ app.post("/send-otp", async (req, res, next) => {
   };
   let transporter = nodemailer.createTransport({
     host: "smtp.mailtrap.io",
-    port: 25,
+    port: 2525,
     secure: false, // upgrade later with STARTTLS
     auth: {
-      user: "0ecd5cceed5797",
-      pass: "7b7c17995dd596",
+      user: "7d8d64197ba865",
+      pass: "35fd16b69421f0",
     },
   });
   transporter.sendMail(message, (err) => {
@@ -97,24 +97,23 @@ app.post("/send-otp", async (req, res, next) => {
   res.status(200).json({
     message: "email sent Successfully",
   });
-  const userOtp = new Verify({
+  const userOtp = new Otp({
     email: req.body.email,
     otp: otp,
   });
   await userOtp.save();
 });
 
-
 // verify otp
 
-app.post("/verify-otp", async (req, res) => {
-  existingMail = await Verify.findOne({
+app.post("/sign-up", async (req, res) => {
+  existingMail = await Otp.findOne({
     email: req.body.email,
   });
   if (existingMail.otp !== req.body.otp) {
     res.status(401).json({
-      message: "Invalid OTP"
-    })
+      message: "Invalid OTP",
+    });
   }
   const user = await User.create({
     username: req.body.username,
@@ -122,11 +121,11 @@ app.post("/verify-otp", async (req, res) => {
     email: req.body.email,
     password: req.body.password,
     otp: existingMail.otp,
-  })
+  });
   res.status(201).json({
     success: "User Registered successfully",
     data: {
-      user
+      user,
     },
   });
 });
