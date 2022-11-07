@@ -16,6 +16,8 @@ const port = process.env.PORT || 4000;
 app.use(bodyParser.json());
 app.use(express.json());
 app.use(cors());
+// Get User Details by id
+
 // login user
 let existingUser;
 app.post("/login", async (req, res, next) => {
@@ -147,6 +149,40 @@ app.get("/accessRoute", (req, res) => {
     },
   });
 });
+//  get user by id
+app.get("/user/:id", async (req, res) => {
+  _id = req.params.id;
+  const singleUser = await User.findById(_id);
+  return res.status(200).json({ success: true, singleUser });
+});
+
+app.put("/user-detail/:id", async (req, res) => {
+  _id = req.params.id;
+  const data = await User.findByIdAndUpdate(_id);
+  if (data) {
+    const userdata = new User({
+      discord: req.body.discord,
+      twitter: req.body.twitter,
+      instagram: req.body.instagram,
+      opensea: req.body.opensea,
+      linkedin: req.body.linkedin,
+      tiktok: req.body.tiktok,
+      website: req.body.website,
+    });
+    const insertUser = await userdata.save();
+    res.status(201).json({
+      success: "profile updated successfully",
+      data: {
+        insertUser,
+      },
+    });
+  } else {
+    res.status(404).json({
+      message: "User not found",
+    });
+  }
+});
+
 app.listen(port, () => {
   console.log(`server is running on port ${port}`);
 });
