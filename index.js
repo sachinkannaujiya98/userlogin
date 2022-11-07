@@ -158,29 +158,22 @@ app.get("/user/:id", async (req, res) => {
 
 app.put("/user-detail/:id", async (req, res) => {
   _id = req.params.id;
-  const data = await User.findByIdAndUpdate(_id);
-  if (data) {
-    const userdata = new User({
-      discord: req.body.discord,
-      twitter: req.body.twitter,
-      instagram: req.body.instagram,
-      opensea: req.body.opensea,
-      linkedin: req.body.linkedin,
-      tiktok: req.body.tiktok,
-      website: req.body.website,
-    });
-    const insertUser = await userdata.save();
-    res.status(201).json({
-      success: "profile updated successfully",
-      data: {
-        insertUser,
-      },
-    });
-  } else {
-    res.status(404).json({
-      message: "User not found",
-    });
-  }
+  const data = await User.findByIdAndUpdate(_id, {
+    discord: req.body.discord,
+    twitter: req.body.twitter,
+    instagram: req.body.instagram,
+    opensea: req.body.opensea,
+    linkedin: req.body.linkedin,
+    tiktok: req.body.tiktok,
+    website: req.body.website,
+  });
+
+  res.status(201).json({
+    success: "profile updated successfully",
+    data: {
+      data,
+    },
+  });
 });
 
 app.listen(port, () => {
