@@ -6,10 +6,11 @@ const path = require("path");
 require("./db/conn.js");
 const User = require("./models/user.js");
 const Otp = require("./models/verify.js");
-const Forgot = require("./models/forget.js");
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
 const multer = require("multer");
+var passport = require("passport");
+var FacebookStrategy = require("passport-facebook");
 require("dotenv").config();
 const { requiresAuth } = require("express-openid-connect");
 const { auth } = require("express-openid-connect");
@@ -45,7 +46,9 @@ const config = {
   issuerBaseURL: "https://dev-0tj2ipjr7ymx2hp3.us.auth0.com",
 };
 app.use(auth(config));
+// ========================facebook login config==============================
 
+// <=====================end facebook config==========================
 app.use(bodyParser.urlencoded({ extended: false }));
 
 const port = process.env.PORT || 4000;
@@ -234,64 +237,83 @@ app.post("/forget-email", async (req, res) => {
   var code = Math.floor(1000 + Math.random() * 9000);
   otp = parseInt(code);
   console.log("otp", otp);
-  var message = {
-    from: "skks@gmail.com",
-    to: req.body.email,
-    subject: "OTP verification",
-    text: "OTP for verification",
-    html:
-      "<h3>OTP for account verification is </h3>" +
-      "<h1 style='font-weight:bold; text-align:center;color:green;'>" +
-      "Your OTP is" +
-      " " +
-      otp +
-      "</h1>",
-  };
-  let transporter = nodemailer.createTransport({
-    host: "smtp.mailtrap.io",
-    port: 2525,
-    secure: false, // upgrade later with STARTTLS
-    auth: {
-      user: "7d8d64197ba865",
-      pass: "35fd16b69421f0",
-    },
-  });
-  transporter.sendMail(message, (err) => {
-    if (err) {
-      console.log("Error occurs", err);
-    } else {
-      console.log("Email sent!!!");
-    }
-  });
-  res.status(200).json({
-    message: "email sent Successfully",
-  });
-  const userOtp = new Forgot({
+  existingMail = await User.findOne({
     email: req.body.email,
-    code: otp,
   });
-  await userOtp.save();
+  if (existingMail) {
+    const updatedOtp = await Otp.findOneAndUpdate(
+      { email: req.body.email },
+      { otp: otp }
+    );
+    res.status(201).json({
+      message: "otp updated successfully",
+      updatedOtp,
+    });
+  } else {
+    var message = {
+      from: "skks@gmail.com",
+      to: req.body.email,
+      subject: "OTP verification",
+      text: "OTP for verification",
+      html:
+        "<h3>OTP for account verification is </h3>" +
+        "<h1 style='font-weight:bold; text-align:center;color:green;'>" +
+        "Your OTP is" +
+        " " +
+        otp +
+        "</h1>",
+    };
+    let transporter = nodemailer.createTransport({
+      host: "smtp.mailtrap.io",
+      port: 2525,
+      secure: false, // upgrade later with STARTTLS
+      auth: {
+        user: "7d8d64197ba865",
+        pass: "35fd16b69421f0",
+      },
+    });
+
+    transporter.sendMail(message, (err) => {
+      if (err) {
+        console.log("Error occurs", err);
+      } else {
+        console.log("Email sent!!!");
+      }
+    });
+    res.status(200).json({
+      message: "email sent Successfully",
+    });
+    const userOtp = new Otp({
+      email: req.body.email,
+      otp: otp,
+    });
+    await userOtp.save();
+  }
 });
 // =====================verify otp for reset password================
 app.patch("/forget-password", async (req, res) => {
-  const existing = await Forgot.findOne({
+  const existing = await Otp.findOne({
     email: req.body.email,
   });
-  if (existing.code !== req.body.code) {
+  if (existing.otp !== req.body.otp) {
     res.status(401).json({
       message: "Invalid OTP",
     });
   } else {
-    const user = await User.updateOne({
-      password: req.body.password,
-      code: existing.code,
-    });
+    const user = await User.updateOne(
+      { email: req.body.email },
+      {
+        password: req.body.password,
+      }
+    );
     res.status(201).json({
       message: "Password updated successfully",
       user,
     });
   }
 });
+//=============== facebook login route ==============================
+
 app.listen(port, () => {
   console.log(`server is running on port ${port}`);
 });
